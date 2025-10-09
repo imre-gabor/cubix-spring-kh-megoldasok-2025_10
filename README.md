@@ -1,0 +1,1 @@
+# cubix-spring-kh-megoldasok-2025_10
