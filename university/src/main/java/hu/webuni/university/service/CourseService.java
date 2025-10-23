@@ -1,7 +1,10 @@
 package hu.webuni.university.service;
 
+import java.time.OffsetDateTime;
+import java.util.Date;
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.DefaultRevisionEntity;
@@ -19,6 +22,8 @@ import hu.webuni.university.model.HistoryData;
 import hu.webuni.university.model.QCourse;
 import hu.webuni.university.repository.CourseRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +34,10 @@ public class CourseService {
 	
 	private final CourseRepository courseRepository;
 	
+	@PersistenceContext
 	private EntityManager em;
-
+	
+	@Cacheable("courseSearchResults")
 	@Transactional
 	public Iterable<Course> searchCourses(Predicate predicate, Pageable pageable) {
 		
@@ -59,8 +66,7 @@ public class CourseService {
 					RevisionType revType = (RevisionType) objArray[2];
 					
 					Course course = (Course) objArray[0];
-					course.getStudents().size();
-					course.getTeachers().size();
+					fetchRelationships(course);
 					
 					HistoryData<Course> historyData = 
 						new HistoryData<>(
@@ -70,6 +76,20 @@ public class CourseService {
 				}).toList();
 		return resultList;
 	}
-
+	
+	
+	private void fetchRelationships(Course course) {
+		course.getStudents().size();
+		course.getTeachers().size();
+	}
+	
+	
+	@Transactional
+	public Course getVersionAt(Integer id, @NotNull @Valid OffsetDateTime at) {
+		
+		Course course = AuditReaderFactory.get(em).find(Course.class, id, Date.from(at.toInstant()));
+		fetchRelationships(course);
+		return course;
+	}
 
 }
