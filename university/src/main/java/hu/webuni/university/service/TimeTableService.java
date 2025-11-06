@@ -1,9 +1,12 @@
 package hu.webuni.university.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -38,7 +41,39 @@ public class TimeTableService {
 			throw new IllegalArgumentException("student does not exist");
 		}
 		
-		//TODO
+		List<TimeTableItem> relevantTimeTableItems = timeTableItemRepository
+				.findByStudentAndSemester(studentId, semester.getYear(), semester.getSemesterType());
+		
+		Map<Integer, List<TimeTableItem>> timeTableItemsByDayOfWeek = relevantTimeTableItems.stream()
+				.collect(Collectors.groupingBy(TimeTableItem::getDayOfWeek));
+		
+		List<SpecialDay> specialDaysAffected = specialDayRepository.findBySourceDayOrTargetDay(from, until);
+		Map<LocalDate, List<SpecialDay>> specialDaysBySourceDay = specialDaysAffected.stream()
+				.collect(Collectors.groupingBy(SpecialDay::getSourceDay));
+		
+		Map<LocalDate, List<SpecialDay>> specialDaysByTargetDay = specialDaysAffected.stream()
+				.filter(sd -> sd.getTargetDay() != null)
+				.collect(Collectors.groupingBy(SpecialDay::getTargetDay));
+		
+		for(LocalDate day = from; !day.isAfter(until); day = day.plusDays(1)) {
+			ArrayList<TimeTableItem> itemsOnDay = new ArrayList<TimeTableItem>();
+			
+			int dayOfWeek = day.getDayOfWeek().getValue();
+			List<TimeTableItem> normalItemsOnDay = timeTableItemsByDayOfWeek.get(dayOfWeek);
+			if(normalItemsOnDay != null &&
+					isDayNotFreeNeitherSwapped(specialDaysBySourceDay, day)) {
+				itemsOnDay.addAll(normalItemsOnDay);
+			}
+			
+			Integer dayOfWeekMovedToThisDay = getDayOfWeekMovedToThisDay(specialDaysByTargetDay, day);
+			if(dayOfWeekMovedToThisDay != null) {
+				itemsOnDay.addAll(timeTableItemsByDayOfWeek.get(dayOfWeekMovedToThisDay));
+			}
+			
+			itemsOnDay.sort(Comparator.comparing(TimeTableItem::getStartLesson));
+			timeTable.put(day, itemsOnDay);
+		}
+		
 		
 		return timeTable;
 	}
