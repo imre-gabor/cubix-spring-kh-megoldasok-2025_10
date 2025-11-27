@@ -16,4 +16,9 @@ public class CentralEducationService {
 				.getStudentXmlWsImplPort()
 				.getNumFreeSemestersForStudent(eduId);
 	}
+	public void askNumFreeSemestersForStudent(int eduId) {
+		
+	}
+
+
 }

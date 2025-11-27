@@ -7,7 +7,7 @@
     </div>
 
     <div class="form-group col-2 p-3">
-        <label for="password">Text</label>
+        <label for="password">Password</label>
         <input type="password" class="form-control" id="password"
             required
             [(ngModel)]="password" name="password">
@@ -17,7 +17,8 @@
 </form>
 
 <div *ngIf="!isLoggedIn()">
-    <button type="button" (click)="facebookSignin()" class="btn btn-primary btn-block">Login with Facebook</button>
+    <button type="button" (click)="facebookSignin()" class="btn btn-primary btn-block">Login with Facebook</button>    
+    <asl-google-signin-button type='icon' size='medium'></asl-google-signin-button>
 </div>
 
 
